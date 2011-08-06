@@ -31,9 +31,9 @@ int USER_GYRO_OFFSET = 605; // この値は適宜調整すること
 #include "Vector.h"
 using namespace ecrobot;
 Nxt         mNxt;
-TouchSensor mTouchSensor(PORT_1);
+TouchSensor mTouchSensor(PORT_4);
 LightSensor mLightSensor(PORT_3);
-GyroSensor  mGyroSensor(PORT_4);
+GyroSensor  mGyroSensor(PORT_1);
 Motor       mLeftMotor(PORT_B);
 Motor       mRightMotor(PORT_C);
 Lcd         mLcd;
@@ -98,21 +98,16 @@ TASK(TaskDrive)
         mLeftMotor.setPWM(pwm);
         mRightMotor.setPWM(pwm);
 
-        if (time % 25 == 0) {
-            mLcd.clear();
-            mLcd.putf("dn", time);
-            mLcd.putf("dn", pwm);
-            mLcd.putf("dn", mLeftMotor.getCount());
-            mLcd.putf("dn", mRightMotor.getCount());
-            mLcd.disp();
-        }
-
-        if (time > duration/2) {
-            // 速度が安定してからエンコーダ値の記録を開始
-            prevLeftCount = mLeftMotor.getCount();
-            prevRightCount = mRightMotor.getCount();
-        }
         if (time > duration) {
+            // LCD表示
+            {
+                mLcd.clear();
+                mLcd.putf("dn", time);
+                mLcd.putf("dn", pwm);
+                mLcd.putf("dn", mLeftMotor.getCount() - prevLeftCount);
+                mLcd.putf("dn", mRightMotor.getCount() - prevRightCount);
+                mLcd.disp();
+            }
             // データ送信
             {
                 S8 dataS08[2] = {0, 0};
@@ -127,6 +122,8 @@ TASK(TaskDrive)
             // 次のPWMへ
             pwm += 10; // 10 ずつ増加
             time = 0;
+            prevLeftCount = mLeftMotor.getCount();
+            prevRightCount = mRightMotor.getCount();
             // 終了
             if (pwm > 100) break;
         }
